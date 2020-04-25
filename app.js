@@ -1,7 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
 const keys = require('./config/keys');
-const googleCalendarService = require('./service/googleCalendarService');
 var bodyParser = require('body-parser');
 
 var app = express();
@@ -21,7 +20,7 @@ var oAuth = google.auth.OAuth2;
 var oauth2Client = new oAuth(
     keys.google.clientID,
     keys.google.clientSecret,
-    'http://localhost:3000/auth/google/redirect'
+    'http://localhost:8080/auth/google/redirect'
 );
 
 const url = oauth2Client.generateAuthUrl({
@@ -102,15 +101,18 @@ app.get('/google/add', function(req, res){
 
 app.post('/addEvent', urlencodedParser, function(req, res){
     console.log('Adding event');
+    const eventStartTime = new Date();
+    eventStartTime.setDate(eventStartTime.getDay() + 3);
     const eventEndTime = new Date();
-    eventEndTime.setDate(eventEndTime.getDay() + 2);
+    eventEndTime.setDate(eventEndTime.getDay() + 3);
     eventEndTime.setMinutes(eventEndTime.getMinutes() + 45);
     const calendar = google.calendar({version: 'v3', oauth2Client});
+    console.log(req.body);
     const event = {
-        summary: data.title,
-        description: data.description,
+        summary: req.body.title,
+        description: req.body.description,
         start: {
-          dateTime: eventEndTime,
+          dateTime: eventStartTime,
           timeZone: 'America/Denver',
         },
         end: {
@@ -119,7 +121,7 @@ app.post('/addEvent', urlencodedParser, function(req, res){
         },
     }
     calendar.events.insert({
-      auth: auth,
+      auth: oauth2Client,
       calendarId: 'primary',
       resource: event,
     }, function(err, event){
